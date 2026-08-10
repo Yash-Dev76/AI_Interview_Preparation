@@ -1,5 +1,5 @@
 import os
-import mysql.connector
+import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -14,26 +14,36 @@ app.config.from_object(Config)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def get_db():
-    return mysql.connector.connect(
-        host=app.config['MYSQL_HOST'],
-        user=app.config['MYSQL_USER'],
-        password=app.config['MYSQL_PASSWORD'],
-        database=app.config['MYSQL_DB']
-    )
+    conn = sqlite3.connect(app.config['DB_PATH'])
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    os.makedirs(os.path.dirname(app.config['DB_PATH']), exist_ok=True)
+    db = get_db()
+    schema_path = os.path.join(app.config['BASE_DIR'], 'database', 'schema.sql')
+    if os.path.exists(schema_path):
+        with open(schema_path, 'r') as f:
+            db.executescript(f.read())
+    db.commit()
+    db.close()
+
+# Auto initialize database and tables on launch
+init_db()
 
 def update_overall_performance(student_id):
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
-    cursor.execute("SELECT score FROM resumes WHERE student_id = %s ORDER BY uploaded_at DESC LIMIT 1", (student_id,))
+    cursor.execute("SELECT score FROM resumes WHERE student_id = ? ORDER BY uploaded_at DESC LIMIT 1", (student_id,))
     res = cursor.fetchone()
     resume_score = res['score'] if res else 0
 
-    cursor.execute("SELECT AVG(score) as avg_score FROM interview_answers WHERE student_id = %s", (student_id,))
+    cursor.execute("SELECT AVG(score) as avg_score FROM interview_answers WHERE student_id = ?", (student_id,))
     res = cursor.fetchone()
     interview_score = int(res['avg_score']) if res and res['avg_score'] is not None else 0
 
-    cursor.execute("SELECT score, total_questions FROM aptitude_results WHERE student_id = %s ORDER BY attempted_at DESC LIMIT 1", (student_id,))
+    cursor.execute("SELECT score, total_questions FROM aptitude_results WHERE student_id = ? ORDER BY attempted_at DESC LIMIT 1", (student_id,))
     res = cursor.fetchone()
     aptitude_score = int((res['score'] / res['total_questions']) * 100) if res and res['total_questions'] > 0 else 0
 
@@ -41,11 +51,13 @@ def update_overall_performance(student_id):
 
     cursor.execute("""
         INSERT INTO performance (student_id, resume_score, interview_score, aptitude_score, overall_score)
-        VALUES (%s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE 
-        resume_score=%s, interview_score=%s, aptitude_score=%s, overall_score=%s
-    """, (student_id, resume_score, interview_score, aptitude_score, overall_score,
-          resume_score, interview_score, aptitude_score, overall_score))
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(student_id) DO UPDATE SET
+        resume_score=excluded.resume_score,
+        interview_score=excluded.interview_score,
+        aptitude_score=excluded.aptitude_score,
+        overall_score=excluded.overall_score
+    """, (student_id, resume_score, interview_score, aptitude_score, overall_score))
     
     db.commit()
     cursor.close()
@@ -76,14 +88,14 @@ def register():
             cursor = db.cursor()
             cursor.execute("""
                 INSERT INTO students (name, email, password, college, department)
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?)
             """, (name, email, hashed_pw, college, department))
             db.commit()
             cursor.close()
             db.close()
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
-        except mysql.connector.Error:
+        except sqlite3.IntegrityError:
             flash('Error: Email might already be registered.', 'danger')
             return redirect(url_for('register'))
 
@@ -96,8 +108,8 @@ def login():
         password = request.form['password']
 
         db = get_db()
-        cursor = db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM students WHERE email = ?", (email,))
         student = cursor.fetchone()
         cursor.close()
         db.close()
@@ -128,8 +140,8 @@ def dashboard():
     update_overall_performance(student_id)
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM performance WHERE student_id = %s", (student_id,))
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM performance WHERE student_id = ?", (student_id,))
     perf = cursor.fetchone()
     cursor.close()
     db.close()
@@ -142,8 +154,8 @@ def profile():
         return redirect(url_for('login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT name, email, college, department, created_at FROM students WHERE id = %s", (session['student_id'],))
+    cursor = db.cursor()
+    cursor.execute("SELECT name, email, college, department, created_at FROM students WHERE id = ?", (session['student_id'],))
     student = cursor.fetchone()
     cursor.close()
     db.close()
@@ -180,7 +192,7 @@ def resume():
             cursor = db.cursor()
             cursor.execute("""
                 INSERT INTO resumes (student_id, filename, score, skills, missing_skills, suggestions)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (session['student_id'], filename, results['score'], skills_str, missing_str, suggestions_str))
             db.commit()
             cursor.close()
@@ -199,13 +211,13 @@ def interview():
         return redirect(url_for('login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
     if request.method == 'POST':
         question_id = request.form['question_id']
         answer = request.form['answer']
 
-        cursor.execute("SELECT keywords FROM interview_questions WHERE id = %s", (question_id,))
+        cursor.execute("SELECT keywords FROM interview_questions WHERE id = ?", (question_id,))
         q = cursor.fetchone()
 
         if q:
@@ -214,7 +226,7 @@ def interview():
 
             cursor.execute("""
                 INSERT INTO interview_answers (student_id, question_id, answer, score, relevance, completeness, feedback)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (session['student_id'], question_id, answer, evaluation['score'], evaluation['relevance'], evaluation['completeness'], feedback_str))
             db.commit()
 
@@ -223,7 +235,7 @@ def interview():
             db.close()
             return render_template('interview_result.html', eval=evaluation, answer=answer)
 
-    cursor.execute("SELECT * FROM interview_questions ORDER BY RAND() LIMIT 1")
+    cursor.execute("SELECT * FROM interview_questions ORDER BY RANDOM() LIMIT 1")
     question = cursor.fetchone()
     cursor.close()
     db.close()
@@ -236,7 +248,7 @@ def aptitude():
         return redirect(url_for('login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
     if request.method == 'POST':
         cursor.execute("SELECT id, correct_answer FROM aptitude_questions")
@@ -252,7 +264,7 @@ def aptitude():
 
         cursor.execute("""
             INSERT INTO aptitude_results (student_id, score, total_questions)
-            VALUES (%s, %s, %s)
+            VALUES (?, ?, ?)
         """, (session['student_id'], score, total))
         db.commit()
 
@@ -274,8 +286,8 @@ def performance():
         return redirect(url_for('login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM performance WHERE student_id = %s", (session['student_id'],))
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM performance WHERE student_id = ?", (session['student_id'],))
     perf = cursor.fetchone()
     cursor.close()
     db.close()
@@ -289,8 +301,8 @@ def admin_login():
         password = request.form['password']
 
         db = get_db()
-        cursor = db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM admins WHERE username = %s", (username,))
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM admins WHERE username = ?", (username,))
         admin = cursor.fetchone()
         cursor.close()
         db.close()
@@ -311,7 +323,7 @@ def admin_dashboard():
         return redirect(url_for('admin_login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("SELECT COUNT(*) as total_students FROM students")
     students_cnt = cursor.fetchone()['total_students']
 
@@ -331,7 +343,7 @@ def admin_students():
         return redirect(url_for('admin_login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM students ORDER BY created_at DESC")
     students = cursor.fetchall()
     cursor.close()
@@ -345,12 +357,12 @@ def admin_interview_questions():
         return redirect(url_for('admin_login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
     if request.method == 'POST':
         question = request.form['question'].strip()
         keywords = request.form['keywords'].strip()
-        cursor.execute("INSERT INTO interview_questions (question, keywords) VALUES (%s, %s)", (question, keywords))
+        cursor.execute("INSERT INTO interview_questions (question, keywords) VALUES (?, ?)", (question, keywords))
         db.commit()
         flash('Interview question added.', 'success')
 
@@ -368,7 +380,7 @@ def delete_interview_question(qid):
 
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM interview_questions WHERE id = %s", (qid,))
+    cursor.execute("DELETE FROM interview_questions WHERE id = ?", (qid,))
     db.commit()
     cursor.close()
     db.close()
@@ -381,7 +393,7 @@ def admin_aptitude_questions():
         return redirect(url_for('admin_login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
     if request.method == 'POST':
         question = request.form['question'].strip()
@@ -394,7 +406,7 @@ def admin_aptitude_questions():
 
         cursor.execute("""
             INSERT INTO aptitude_questions (question, option_a, option_b, option_c, option_d, correct_answer, category)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (question, opt_a, opt_b, opt_c, opt_d, correct, category))
         db.commit()
         flash('Aptitude question added.', 'success')
@@ -413,7 +425,7 @@ def delete_aptitude_question(qid):
 
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM aptitude_questions WHERE id = %s", (qid,))
+    cursor.execute("DELETE FROM aptitude_questions WHERE id = ?", (qid,))
     db.commit()
     cursor.close()
     db.close()
@@ -426,7 +438,7 @@ def admin_results():
         return redirect(url_for('admin_login'))
 
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("""
         SELECT p.*, s.name, s.email, s.college 
         FROM performance p
