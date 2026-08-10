@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="hero-section text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold">AI Interview Preparation System</h1>
+        <p class="lead mt-3">Practice. Improve. Get Interview Ready.</p>
+        <div class="mt-4">
+            <a href="{{ url_for('register') }}" class="btn btn-light btn-lg text-primary fw-bold me-2">Get Started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">Student Login</a>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <h2 class="text-center fw-bold mb-4">Core Preparation Modules</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 p-4 text-center feature-card">
+                <div class="display-4 text-primary mb-3">📄</div>
+                <h4>Resume Analyzer</h4>
+                <p class="text-muted">Upload your PDF resume to detect keywords, skills, and missing standard sections.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 p-4 text-center feature-card">
+                <div class="display-4 text-success mb-3">💬</div>
+                <h4>AI Mock Interview</h4>
+                <p class="text-muted">Practice HR and technical questions with instant automated feedback and keyword match scores.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 p-4 text-center feature-card">
+                <div class="display-4 text-warning mb-3">📝</div>
+                <h4>Aptitude Test</h4>
+                <p class="text-muted">Test your logical reasoning, quantitative aptitude, and verbal skills with interactive MCQs.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
