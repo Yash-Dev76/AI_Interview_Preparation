@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+    <h3 class="fw-bold mb-4">Manage Interview Questions</h3>
+
+    <div class="card p-4 mb-4">
+        <h5>Add New Question</h5>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Question Text</label>
+                <input type="text" name="question" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Target Keywords (Comma Separated)</label>
+                <input type="text" name="keywords" class="form-control" placeholder="e.g. python, sql, project, challenge" required>
+            </div>
+            <button type="submit" class="btn btn-success">Add Question</button>
+        </form>
+    </div>
+
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Question</th>
+                <th>Keywords</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in questions %}
+                <tr>
+                    <td>{{ q.id }}</td>
+                    <td>{{ q.question }}</td>
+                    <td>{{ q.keywords }}</td>
+                    <td><a href="{{ url_for('delete_interview_question', qid=q.id) }}" class="btn btn-danger btn-sm">Delete</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
