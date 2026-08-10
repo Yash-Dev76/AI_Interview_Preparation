@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5 text-center">
+    <div class="card p-5">
+        <h2 class="fw-bold text-warning mb-3">Aptitude Test Completed!</h2>
+        <div class="display-3 fw-bold text-dark my-3">{{ score }} / {{ total }}</div>
+        <p class="lead">You correctly answered {{ score }} out of {{ total }} questions.</p>
+        <div class="mt-4">
+            <a href="{{ url_for('aptitude') }}" class="btn btn-outline-warning me-2">Retake Test</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
