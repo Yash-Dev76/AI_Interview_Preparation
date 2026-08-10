@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+    <h3 class="fw-bold mb-4">📊 Performance Dashboard</h3>
+
+    <div class="card p-4 mb-4">
+        <h5>Resume Preparation Score</h5>
+        <div class="progress mb-3" style="height: 25px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ perf.resume_score if perf else 0 }}%;">
+                {{ perf.resume_score if perf else 0 }}%
+            </div>
+        </div>
+
+        <h5>Mock Interview Score</h5>
+        <div class="progress mb-3" style="height: 25px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ perf.interview_score if perf else 0 }}%;">
+                {{ perf.interview_score if perf else 0 }}%
+            </div>
+        </div>
+
+        <h5>Aptitude Score</h5>
+        <div class="progress mb-3" style="height: 25px;">
+            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ perf.aptitude_score if perf else 0 }}%;">
+                {{ perf.aptitude_score if perf else 0 }}%
+            </div>
+        </div>
+
+        <hr>
+
+        <h4 class="fw-bold">Overall Placement Readiness: <span class="text-primary">{{ perf.overall_score if perf else 0 }}%</span></h4>
+    </div>
+</div>
+{% endblock %}
