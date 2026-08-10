@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+    <h2 class="fw-bold mb-4">Welcome, {{ session.get('student_name') }} 👋</h2>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card p-3 bg-light text-center">
+                <h5>Resume Score</h5>
+                <h2 class="text-primary fw-bold">{{ perf.resume_score if perf else 0 }}%</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 bg-light text-center">
+                <h5>Interview Score</h5>
+                <h2 class="text-success fw-bold">{{ perf.interview_score if perf else 0 }}%</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 bg-light text-center">
+                <h5>Aptitude Score</h5>
+                <h2 class="text-warning fw-bold">{{ perf.aptitude_score if perf else 0 }}%</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 bg-dark text-white text-center">
+                <h5>Overall Readiness</h5>
+                <h2 class="text-info fw-bold">{{ perf.overall_score if perf else 0 }}%</h2>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="fw-bold mb-3">Quick Actions</h4>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <h4>📄 Resume Analyzer</h4>
+                <p>Upload your PDF resume to check match score and technical skills.</p>
+                <a href="{{ url_for('resume') }}" class="btn btn-primary">Analyze Resume</a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <h4>💬 AI Mock Interview</h4>
+                <p>Practice answering common HR & technical questions.</p>
+                <a href="{{ url_for('interview') }}" class="btn btn-success">Start Interview</a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <h4>📝 Aptitude Test</h4>
+                <p>Attempt 10 multiple-choice questions on logical and quantitative skills.</p>
+                <a href="{{ url_for('aptitude') }}" class="btn btn-warning text-white">Take Test</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
