@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+    <h2 class="fw-bold mb-4">Admin Control Dashboard</h2>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card p-4 text-center bg-primary text-white">
+                <h3>Registered Students</h3>
+                <h2>{{ students_cnt }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center bg-success text-white">
+                <h3>Interview Questions</h3>
+                <h2>{{ iq_cnt }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center bg-warning text-white">
+                <h3>Aptitude Questions</h3>
+                <h2>{{ aq_cnt }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="list-group">
+        <a href="{{ url_for('admin_students') }}" class="list-group-item list-group-item-action">Manage Registered Students</a>
+        <a href="{{ url_for('admin_interview_questions') }}" class="list-group-item list-group-item-action">Manage Interview Questions</a>
+        <a href="{{ url_for('admin_aptitude_questions') }}" class="list-group-item list-group-item-action">Manage Aptitude Questions</a>
+        <a href="{{ url_for('admin_results') }}" class="list-group-item list-group-item-action">View Student Performance Reports</a>
+    </div>
+</div>
+{% endblock %}
