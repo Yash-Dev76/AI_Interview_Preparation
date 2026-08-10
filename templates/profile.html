@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card p-4">
+                <h3 class="fw-bold text-primary mb-4">Student Profile</h3>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Name:</strong> {{ student.name }}</li>
+                    <li class="list-group-item"><strong>Email:</strong> {{ student.email }}</li>
+                    <li class="list-group-item"><strong>College:</strong> {{ student.college }}</li>
+                    <li class="list-group-item"><strong>Department:</strong> {{ student.department }}</li>
+                    <li class="list-group-item"><strong>Registered On:</strong> {{ student.created_at }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
