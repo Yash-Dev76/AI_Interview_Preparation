@@ -397,7 +397,7 @@ def admin_login():
         password = request.form['password']
 
         # Direct, guaranteed fallback check for admin account
-        if (username == 'admin' and password == 'adminpassword') or (username == 'admin' and password == 'admin'):
+        if username == 'admin' and password == 'YashAdmin@2026':
             session['admin_id'] = 1
             session['admin_user'] = 'admin'
             flash('Admin authentication successful.', 'success')
